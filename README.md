@@ -168,3 +168,7 @@ tests/                      corpus, rules, guard, model-answer parsing
 - **Text is given, not read.** The benchmark starts from extracted text; OCR quality is
   simulated by letter swaps, not measured.
 - Folders are a fixed tree; creating a new folder is out of scope here.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Third-party models keep their own licenses.
