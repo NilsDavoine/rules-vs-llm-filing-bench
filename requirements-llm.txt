@@ -1,0 +1,12 @@
+# Local open-model comparison. Measured with the CUDA 12.8 build on a 4 GB GTX 1650.
+# CPU-only machines: replace the index with https://download.pytorch.org/whl/cpu
+# and the pin with torch==2.7.0+cpu (slower, same results with greedy decoding up to float noise).
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.7.0+cu128
+transformers==4.46.3
+tokenizers==0.20.3
+huggingface-hub==0.26.5
+accelerate==1.1.1
+numpy==1.26.4
+# Optional: only used when ANTHROPIC_API_KEY is set.
+anthropic==2.2.0

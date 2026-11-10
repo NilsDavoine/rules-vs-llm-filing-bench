@@ -1,0 +1,2 @@
+# Rules engine and benchmark: standard library only.
+pytest==8.3.4
