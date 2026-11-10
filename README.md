@@ -1,5 +1,7 @@
 # rules-vs-llm-filing-bench
 
+[![tests](https://github.com/NilsDavoine/rules-vs-llm-filing-bench/actions/workflows/tests.yml/badge.svg)](https://github.com/NilsDavoine/rules-vs-llm-filing-bench/actions/workflows/tests.yml)
+
 ![Documents filed exactly right on the 51 test pieces: rules v0 0 %, v1 20 %, v2 41 %, v3 88 %; Qwen2.5 0.5B 4 %, Qwen2.5 1.5B 24 %; hybrid 88 %](docs/results.png)
 
 **When do you actually need a language model?** A benchmark on one narrow, very common
