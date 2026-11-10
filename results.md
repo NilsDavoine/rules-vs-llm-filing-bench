@@ -21,15 +21,15 @@ Period, nature, name and folder columns are on the test split.
 
 | approach | ok (dev) | ok (test) | period | nature | name | folder | invented dates blocked | mean latency | p95 latency | model calls | API cost |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| rules-v3 | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 0.88 ms | 1.84 ms | - | 0 (CPU) |
+| rules-v3 | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 1.16 ms | 2.14 ms | - | 0 (CPU) |
 | qwen2.5-0.5b | 8 % | 4 % | 67 % | 25 % | 8 % | 33 % | 21 | 4.57 s | 6.90 s | - | 0 (local GPU) |
 | qwen2.5-1.5b | 22 % | 24 % | 75 % | 53 % | 25 % | 65 % | 18 | 10.94 s | 12.09 s | - | 0 (local GPU) |
-| hybrid v3+qwen2.5-0.5b | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 1.64 ms | 3.60 ms | 0/150 | 0 (local GPU) |
-| hybrid v3+qwen2.5-1.5b | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 0.85 ms | 1.53 ms | 0/150 | 0 (local GPU) |
+| hybrid v3+qwen2.5-0.5b | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 1.19 ms | 2.36 ms | 0/150 | 0 (local GPU) |
+| hybrid v3+qwen2.5-1.5b | 100 % | 88 % | 96 % | 88 % | 88 % | 90 % | 0 | 1.38 ms | 2.29 ms | 0/150 | 0 (local GPU) |
 
 Local models ran with greedy decoding on `cuda` (GTX 1650, 4 GB, float16); latency is generation time per piece, model loading excluded. Rules latency is measured on one CPU core.
 
-Claude was **not** run for these results (no `ANTHROPIC_API_KEY`). Set one and re-run to add a row; nothing else changes.
+Claude was **not** run for these results (no API key during development). `./run.sh --claude` adds its row; nothing else changes.
 
 ### Choosing when the hybrid asks the model (dev split only)
 

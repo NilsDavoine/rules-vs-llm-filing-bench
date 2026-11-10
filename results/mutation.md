@@ -6,10 +6,10 @@ Each mutant breaks `filing_bench/guard.py` on purpose; `tests/test_guard.py` mus
 
 | mutant | tests | pytest summary |
 |---|---|---|
-| (none, before) | green | `20 passed in 0.16s` |
-| the guard accepts every date | RED (caught) | `8 failed, 12 passed in 0.29s` |
-| a blocked date keeps its year folder | RED (caught) | `3 failed, 17 passed in 0.19s` |
-| a month is accepted when only its year is shown | RED (caught) | `1 failed, 19 passed in 0.17s` |
-| (none, after restore) | green | `20 passed in 0.16s` |
+| (none, before) | green | `20 passed in 0.18s` |
+| the guard accepts every date | RED (caught) | `8 failed, 12 passed in 0.13s` |
+| a blocked date keeps its year folder | RED (caught) | `3 failed, 17 passed in 0.16s` |
+| a month is accepted when only its year is shown | RED (caught) | `1 failed, 19 passed in 0.18s` |
+| (none, after restore) | green | `20 passed in 0.12s` |
 
 Result: every mutant was caught.

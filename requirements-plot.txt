@@ -1,0 +1,2 @@
+# Only for scripts/plot_results.py (the chart in the README).
+matplotlib==3.9.2

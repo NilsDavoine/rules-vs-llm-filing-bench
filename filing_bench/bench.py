@@ -1,7 +1,8 @@
 """Run every approach on both splits and write results.md.
 
-    python -m filing_bench.bench              # rules + local models (+ Claude if ANTHROPIC_API_KEY is set)
+    python -m filing_bench.bench              # rules + local models (+ Claude if its answers are cached)
     python -m filing_bench.bench --no-llm     # rules only, a few seconds, no download
+    python -m filing_bench.bench --claude     # also asks Claude (ANTHROPIC_API_KEY), cost estimate first
 
 Every number in results.md comes from this script. Model answers are cached
 in results/cache/, so a second run re-scores without re-generating.
@@ -12,6 +13,7 @@ import datetime as dt
 import json
 import os
 import statistics
+import sys
 import time
 
 from . import corpus, guard
@@ -78,10 +80,30 @@ def approaches(args):
             m = LocalModel(name)
             out.append((name, m.propose))
             models.append(m)
-        if ClaudeModel.available():
-            c = ClaudeModel()
+        c = ClaudeModel()
+        if args.claude or not c.missing(args.pieces):
+            # A complete cache re-scores without a key; new calls need --claude.
             out.append((c.name, c.propose))
     return out, models
+
+
+def confirm_claude(args, pieces):
+    """Print the cost estimate before any call; returns False to stop."""
+    c = ClaudeModel()
+    e = c.estimate(pieces)
+    print(f"Claude ({c.model}): {e['calls']} pieces to send, {e['cached']} already cached. "
+          f"${e['price_in']:.2f} / ${e['price_out']:.2f} per 1M input / output tokens.\n"
+          f"  expected  : {e['tokens_in']:,.0f} in + {e['expected_out']:,.0f} out  ~ ${e['expected_usd']:.3f}\n"
+          f"  worst case: {e['tokens_in']:,.0f} in + {e['worst_out']:,.0f} out  ~ ${e['worst_usd']:.3f}"
+          f"  (every answer at max_tokens)", flush=True)
+    if e["calls"] == 0:
+        return True
+    if not ClaudeModel.available():
+        print("set ANTHROPIC_API_KEY to run Claude", file=sys.stderr)
+        return False
+    if args.yes:
+        return True
+    return input("Run it, billed to your key? [y/N] ").strip().lower() in ("y", "yes")
 
 
 def pct(x):
@@ -144,8 +166,15 @@ def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-llm", action="store_true")
     ap.add_argument("--models", nargs="*", default=list(LOCAL_MODELS))
+    ap.add_argument("--claude", action="store_true",
+                    help="also run Claude (CLAUDE_MODEL, default claude-haiku-5-5) on every piece")
+    ap.add_argument("--yes", action="store_true", help="with --claude: skip the confirmation")
     args = ap.parse_args(argv)
     data = {s: corpus.load(s) for s in SPLITS}
+    args.pieces = data["dev"] + data["test"]
+    if args.claude and not confirm_claude(args, args.pieces):
+        print("Cancelled, nothing was sent to Claude.")
+        return 1
     runs, models = approaches(args)
     rec = {}
     for name, propose in runs:
@@ -235,9 +264,9 @@ def write_report(data, rec, names, sweep, hybrid_names, models):
         out += [f"Local models ran with greedy decoding on `{device}` (GTX 1650, 4 GB, float16); "
                 "latency is generation time per piece, model loading excluded. "
                 "Rules latency is measured on one CPU core.", ""]
-    if not ClaudeModel.available():
-        out += ["Claude was **not** run for these results (no `ANTHROPIC_API_KEY`). "
-                "Set one and re-run to add a row; nothing else changes.", ""]
+    if not any(n.startswith("claude") for n in names):
+        out += ["Claude was **not** run for these results (no API key during development). "
+                "`./run.sh --claude` adds its row; nothing else changes.", ""]
 
     if sweep:
         out += ["### Choosing when the hybrid asks the model (dev split only)", "",
@@ -277,4 +306,4 @@ def write_report(data, rec, names, sweep, hybrid_names, models):
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

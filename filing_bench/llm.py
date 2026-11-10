@@ -162,35 +162,58 @@ class LocalModel:
         return p, row
 
 
-# USD per million tokens, from Anthropic's public price list (October 2026).
+# USD per million tokens, from Anthropic's public price list (October 2026), prompts up to 100K tokens.
 CLAUDE_PRICES = {"claude-opus-5-5": (4.00, 20.00), "claude-sonnet-5-5": (2.00, 10.00),
                  "claude-haiku-5-5": (0.10, 0.50)}
+CLAUDE_DEFAULT = "claude-haiku-5-5"   # the cheapest current model; CLAUDE_MODEL picks another
+CLAUDE_MAX_TOKENS = 4000
+CHARS_PER_TOKEN = 3.0       # deliberately low (FR/DE text, JSON): over-estimates the input
+EXPECTED_OUT_TOKENS = 300   # one short JSON object plus a little thinking at effort "low"
 
 
 class ClaudeModel:
-    """Optional. Runs only when ANTHROPIC_API_KEY is set; never needed to reproduce the bench."""
+    """Optional. Runs only with --claude and ANTHROPIC_API_KEY; never needed to reproduce the bench.
 
-    def __init__(self, model=None):
-        self.model = model or os.environ.get("CLAUDE_MODEL", "claude-opus-5-5")
+    No temperature/top_p/top_k and no assistant prefill: current models reject both
+    with a 400. The few-shot examples end on a user turn, so nothing is prefilled."""
+
+    def __init__(self, model=None, client=None):
+        self.model = model or os.environ.get("CLAUDE_MODEL", CLAUDE_DEFAULT)
         self.name = self.model
         self.cache = _Cache(self.model)
-        self._client = None
+        self._client = client
 
     @staticmethod
     def available():
         return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
+    def missing(self, pieces):
+        """Pieces with no cached answer: the only ones a run would pay for."""
+        return [p for p in pieces if self.cache.get(messages(p)) is None]
+
+    def estimate(self, pieces):
+        """Offline cost estimate for the pieces not cached yet: no network, no key."""
+        price_in, price_out = CLAUDE_PRICES.get(self.model, (0.0, 0.0))
+        todo = self.missing(pieces)
+        tok_in = sum(sum(len(m["content"]) for m in messages(p)) / CHARS_PER_TOKEN for p in todo)
+        exp_out, worst_out = EXPECTED_OUT_TOKENS * len(todo), CLAUDE_MAX_TOKENS * len(todo)
+        usd = lambda i, o: (i * price_in + o * price_out) / 1e6
+        return {"calls": len(todo), "cached": len(pieces) - len(todo), "tokens_in": tok_in,
+                "expected_out": exp_out, "expected_usd": usd(tok_in, exp_out),
+                "worst_out": worst_out, "worst_usd": usd(tok_in, worst_out),
+                "price_in": price_in, "price_out": price_out}
+
     def propose(self, piece):
         msgs = messages(piece)
         row = self.cache.get(msgs)
         if row is None:
-            import anthropic
             if self._client is None:
+                import anthropic
                 self._client = anthropic.Anthropic()
             t0 = time.perf_counter()
             resp = self._client.messages.create(
-                model=self.model, max_tokens=4000, system=msgs[0]["content"], messages=msgs[1:],
-                output_config={"effort": "low"})
+                model=self.model, max_tokens=CLAUDE_MAX_TOKENS, system=msgs[0]["content"],
+                messages=msgs[1:], output_config={"effort": "low"})
             seconds = time.perf_counter() - t0
             text = "" if resp.stop_reason == "refusal" else "".join(
                 b.text for b in resp.content if b.type == "text")

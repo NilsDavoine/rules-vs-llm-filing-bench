@@ -1,0 +1,2 @@
+# Optional: only for ./run.sh --claude (with ANTHROPIC_API_KEY). No torch needed.
+anthropic==2.7.0
